@@ -3,105 +3,118 @@ import yfinance as yf
 import pandas as pd
 import time
 import datetime
+import random
 
-# --- SETTINGS & OWNERSHIP ---
+# --- CONFIGURATION ---
 st.set_page_config(page_title="Strategic War Room", layout="wide")
-
-# NAMA PEMILIK PROJEK (OWNERSHIP)
 OWNER_NAME = "MOHD KHAIRUL RIDHUAN BIN MOHD FADZIL"
 
-# --- REAL-TIME DATA ENGINE (WITH CACHING TO PREVENT ERRORS) ---
+# --- DATA ENGINE ---
 @st.cache_data(ttl=600)
 def get_live_data():
     try:
-        # Menarik data sebenar dari Yahoo Finance
-        oil_ticker = yf.Ticker("BZ=F")
-        oil_data = oil_ticker.history(period="1d")
-        gold_ticker = yf.Ticker("GC=F")
-        gold_data = gold_ticker.history(period="1d")
-        
-        oil_price = oil_data['Close'].iloc[-1]
-        gold_price = gold_data['Close'].iloc[-1]
-        return round(oil_price, 2), round(gold_price, 2), "Live Connection"
+        oil = yf.Ticker("BZ=F").history(period="1d")['Close'].iloc[-1]
+        gold = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1]
+        return round(oil, 2), round(gold, 2), "Live Connection"
     except:
-        # Jika API Limit (Ralat Merah), sistem guna harga buffer supaya tidak rosak
-        return 84.50, 2165.00, "Secure Offline Mode"
+        return 84.50, 2165.00, "Buffer Mode"
 
-# --- SESSION STATE (Memory for the simulation) ---
-if 'logs' not in st.session_state:
-    st.session_state.logs = []
-if 'oil_multiplier' not in st.session_state:
-    st.session_state.oil_multiplier = 1.0
+# --- SESSION STATE ---
+if 'logs' not in st.session_state: st.session_state.logs = []
+if 'oil_mult' not in st.session_state: st.session_state.oil_mult = 1.0
+if 'missile_stats' not in st.session_state: st.session_state.missile_stats = None
 
-# --- HEADER SECTION ---
-st.title("🔴 GLOBAL STRATEGIC CRISIS SIMULATOR")
-st.markdown(f"**Lead Strategic Analyst:** {OWNER_NAME} | **System Status:** DEFCON 2")
+# --- HEADER ---
+st.title("🛰️ GLOBAL STRATEGIC & ECONOMIC COMMAND CENTER")
+st.markdown(f"**Lead Analyst:** {OWNER_NAME} | **Focus:** Malaysia Macro-Risk Assessment")
 st.divider()
 
-# --- SIDEBAR (Real-Time Metrics) ---
-oil_price, gold_price, status = get_live_data()
-current_oil = round(oil_price * st.session_state.oil_multiplier, 2)
-
-st.sidebar.header("📊 STRATEGIC DATA FEED")
-st.sidebar.write(f"**Analyst:** {OWNER_NAME}")
+# --- SIDEBAR: REAL-TIME FEED ---
+oil, gold, status = get_live_data()
+cur_oil = round(oil * st.session_state.oil_mult, 2)
+st.sidebar.header("📡 LIVE TELEMETRY")
+st.sidebar.metric("BRENT CRUDE", f"${cur_oil}", f"{round(st.session_state.oil_mult*100-100, 1)}% Shock")
+st.sidebar.metric("GOLD OUNCE", f"${gold}")
 st.sidebar.divider()
-st.sidebar.metric("BRENT CRUDE OIL", f"${current_oil}", delta=f"{round(st.session_state.oil_multiplier*100-100, 1)}% Volatility")
-st.sidebar.metric("GOLD (XAU/USD)", f"${gold_price}")
-st.sidebar.write(f"Data Status: {status}")
-st.sidebar.write(f"Sync: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+st.sidebar.write("**Global Threat Level:**")
+st.sidebar.error("DEFCON 2" if st.session_state.oil_mult > 1.2 else "DEFCON 3")
 
-# --- MAIN INTERACTIVE BOARD ---
-col1, col2 = st.columns([2, 1])
+# --- TOP SECTION: MILITARY BALANCE ---
+st.subheader("⚔️ Regional Military Power Balance")
+a1, a2, a3 = st.columns(3)
+with a1:
+    st.write("**🇮🇷 IRAN (Offense)**")
+    st.progress(0.85)
+    st.caption("Ballistic Missiles: 3,000+ | Strategic Depth: High")
+with a2:
+    st.write("**🇺🇸 US 5TH FLEET**")
+    st.progress(0.95)
+    st.caption("Carrier Groups: 2 | Tomahawk Capacity: 800+")
+with a3:
+    st.write("**🇮🇱 ISRAEL (Defense)**")
+    st.progress(0.90)
+    st.caption("Interception Rate: 94% | Nuclear Capability: Undisclosed")
 
-with col1:
-    st.subheader("Interactive Command Console")
-    st.info("Initiate a Strategic Trigger to simulate global repercussions.")
-    
-    # 3 Strategic Trigger Buttons
-    c1, c2, c3 = st.columns(3)
-    
-    if c1.button("🔥 Scenario A: Cyber Escalation"):
-        st.session_state.oil_multiplier = 1.15
-        st.session_state.logs.append(f"[{datetime.datetime.now().strftime('%H:%M')}] Cyber-strike on Iran's electrical grid. Energy markets reacting.")
-    
-    if c2.button("🚧 Scenario B: Hormuz Blockade"):
-        st.session_state.oil_multiplier = 1.45
-        st.session_state.logs.append(f"[{datetime.datetime.now().strftime('%H:%M')}] Strait of Hormuz closed. Global oil transit disrupted.")
-        
-    if c3.button("🚀 Scenario C: Pre-emptive Strike"):
-        st.session_state.oil_multiplier = 1.30
-        st.session_state.logs.append(f"[{datetime.datetime.now().strftime('%H:%M')}] Kinetic strike on nuclear research sites. Regional mobilization active.")
+# --- INTERACTIVE TRIGGER CONSOLE ---
+st.divider()
+c1, c2 = st.columns([2, 1])
 
-    # Animation Feedback
-    if st.session_state.oil_multiplier > 1.0:
-        st.divider()
-        st.warning("⚠️ ANALYSING STRATEGIC IMPACT...")
-        bar = st.progress(0)
-        for i in range(100):
-            time.sleep(0.01)
-            bar.progress(i + 1)
-        st.success("Impact Assessment Completed.")
+with c1:
+    st.subheader("🕹️ Tactical Trigger Console")
+    b1, b2, b3 = st.columns(3)
+    if b1.button("⚡ Cyber Escalation"):
+        st.session_state.oil_mult = 1.10
+        st.session_state.logs.append("Cyber-warfare detected. Global banking systems on alert.")
+    if b2.button("🚧 Hormuz Blockade"):
+        st.session_state.oil_mult = 1.45
+        st.session_state.logs.append("Strait of Hormuz blocked. Global supply chain collapse.")
+    if b3.button("🚀 Pre-emptive Strike"):
+        st.session_state.oil_mult = 1.25
+        launched = random.randint(200, 500)
+        st.session_state.logs.append(f"Full-scale missile barrage. {launched} units launched.")
 
-with col2:
-    st.subheader("Intelligence Log")
-    if not st.session_state.logs:
-        st.write("Awaiting operational command...")
+with c2:
+    st.subheader("📜 Intelligence Feed")
     for log in reversed(st.session_state.logs):
-        st.write(f"• {log}")
+        st.write(f"› {log}")
 
-# --- MALAYSIA SPECIFIC IMPACT ---
+# --- NEW SECTION: MALAYSIA DEEP IMPACT ANALYSIS ---
 st.divider()
-st.subheader("🇲🇾 Malaysia National Security & Economic Assessment")
-st.write(f"Report Prepared by Lead Analyst: **{OWNER_NAME}**")
+st.header("🇲🇾 Malaysia National Risk Assessment")
+st.info(f"Report ID: MY-STRIKE-{datetime.datetime.now().strftime('%Y%m%d')}")
 
-m1, m2, m3 = st.columns(3)
+# Calculating Simulated Economic Data
+myr_base = 4.72
+sim_myr = round(myr_base + (st.session_state.oil_mult - 1), 2)
+inflation_rate = round(2.5 + (st.session_state.oil_mult - 1) * 20, 1)
+debt_burden = "High" if sim_myr > 4.80 else "Stable"
 
-# Logik kiraan harga RON95 berdasarkan kenaikan minyak dunia
-ron95_price = round(2.05 * st.session_state.oil_multiplier, 2)
+r1, r2, r3 = st.columns(3)
+r1.metric("USD/MYR Exchange", f"RM {sim_myr}", f"{round(sim_myr-myr_base, 2)} vs Base")
+r2.metric("Projected Inflation (CPI)", f"{inflation_rate}%", "Supply Shock")
+r3.metric("RON95 Price (w/o Subsidy)", f"RM {round(2.05 * st.session_state.oil_mult, 2)}", "Fiscal Strain")
 
-m1.metric("Petrol Price (RON95 Est.)", f"RM {ron95_price}", "Subsidy Pressure")
-m2.metric("MYR/USD Exchange Rate", "4.81", "-0.15 Volatility")
-m3.metric("Bursa Malaysia (KLCI)", "1,538", "-3.2% Impact")
+# DEEP ANALYSIS TABLE
+st.subheader("📊 Sectoral & Structural Risk Analysis")
+impact_data = {
+    "Domain": ["Sovereign Debt", "Food Security", "Semiconductor Industry", "Aviation & Tourism", "Oil & Gas (Petronas)"],
+    "Direct Effect": [
+        "Higher cost to service external debt.",
+        "Imported inflation on wheat & fertilizer.",
+        "Supply chain delay for E&E exports.",
+        "Increased jet fuel costs & route diversions.",
+        "Increased revenue but higher subsidy burden."
+    ],
+    "Risk Level": ["CRITICAL" if sim_myr > 4.85 else "MODERATE", "HIGH", "MODERATE", "HIGH", "STABLE"]
+}
+st.table(pd.DataFrame(impact_data))
+
+# INDUSTRY WINNERS & LOSERS
+w1, w2 = st.columns(2)
+with w1:
+    st.success("📈 Likely Beneficiaries: Oil & Gas Service Providers, Defense Contractors, Gold Miners.")
+with w2:
+    st.error("📉 Likely Vulnerable: Airlines, Consumer Goods, Construction (Material costs), Manufacturing.")
 
 st.divider()
-st.caption(f"© 2024 Strategic Research Project | Lead Analyst: {OWNER_NAME} | Data Source: Yahoo Finance Real-Time API")
+st.caption(f"© 2024 Strategic Research Portfolio | Lead Analyst: {OWNER_NAME} | Source: Yahoo Finance & Macro-logic Engine")
