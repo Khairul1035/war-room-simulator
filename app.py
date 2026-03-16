@@ -9,16 +9,15 @@ import random
 st.set_page_config(page_title="GLOBAL COMMAND CENTER", layout="wide")
 OWNER_NAME = "MOHD KHAIRUL RIDHUAN BIN MOHD FADZIL"
 
-# --- CUSTOM CSS FOR ESPIONAGE FEEL ---
+# --- CUSTOM CSS (BETRULKAN: unsafe_allow_html) ---
 st.markdown("""
     <style>
     .main { background-color: #060606; }
     .stMetric { background-color: #111; border: 1px solid #222; padding: 10px; border-radius: 5px; box-shadow: 0 0 10px #00ff0033; }
     .stButton>button { width: 100%; border-radius: 0px; border: 1px solid #ff0000; background-color: #1a0000; color: #ff0000; font-weight: bold; }
     .stButton>button:hover { background-color: #ff0000; color: white; }
-    div[data-testid="stExpander"] { background-color: #111; border: 1px solid #333; }
     </style>
-    """, unsafe_allow_globals=True)
+    """, unsafe_allow_html=True)
 
 # --- DATA ENGINE ---
 @st.cache_data(ttl=300)
@@ -34,10 +33,11 @@ def get_live_data():
 # --- SESSION STATE ---
 if 'logs' not in st.session_state: st.session_state.logs = []
 if 'oil_mult' not in st.session_state: st.session_state.oil_mult = 1.0
+if 'protocol' not in st.session_state: st.session_state.protocol = "NORMAL"
 
 # --- HEADER ---
-st.markdown(f"<h1 style='text-align: center; color: red; letter-spacing: 5px; margin-bottom: 0;'>🛰️ GLOBAL COMMAND & CONTROL CENTER</h1>", unsafe_allow_globals=True)
-st.markdown(f"<p style='text-align: center; color: #888; margin-top: 0;'>DIRECTOR: {OWNER_NAME} | ACCESS: TOP SECRET | CLEARANCE: LEVEL 4</p>", unsafe_allow_globals=True)
+st.markdown(f"<h1 style='text-align: center; color: red; letter-spacing: 5px; margin-bottom: 0;'>🛰️ GLOBAL COMMAND & CONTROL CENTER</h1>", unsafe_allow_html=True)
+st.markdown(f"<p style='text-align: center; color: #888; margin-top: 0;'>DIRECTOR: {OWNER_NAME} | ACCESS: TOP SECRET | CLEARANCE: LEVEL 4</p>", unsafe_allow_html=True)
 
 # --- SIDEBAR: GLOBAL TELEMETRY ---
 oil, gold, usd_myr, status = get_live_data()
@@ -54,75 +54,83 @@ base_debt = 1.5e12
 current_debt = base_debt + ((st.session_state.oil_mult - 1) * 75e9)
 st.sidebar.subheader("🏦 FISCAL DEBT TRACKER")
 st.sidebar.error(f"RM {current_debt/1e12:.4f} TRILLION")
-st.sidebar.caption("Projected increase based on subsidy & currency shock.")
 
-# --- INTEL DECRYPTION BUTTONS ---
+# --- EMERGENCY PROTOCOL ACTIONS ---
+st.sidebar.divider()
+st.sidebar.subheader("🚨 EMERGENCY PROTOCOLS")
+if st.sidebar.button("⚔️ NATIONAL MOBILIZATION"):
+    st.session_state.protocol = "MOBILIZATION"
+    st.session_state.logs.append("PROTOCOL: National Armed Forces (ATM) mobilizing to high-alert status.")
+if st.sidebar.button("☢️ EVACUATION PROTOCOL"):
+    st.session_state.protocol = "EVACUATION"
+    st.session_state.logs.append("PROTOCOL: Strategic evacuation of Putrajaya and KL financial districts initiated.")
+
+# --- INTEL DECRYPTION ---
 st.subheader("🔓 Intelligence Decryption Portal")
 c1, c2, c3 = st.columns(3)
 with c1:
-    if st.button("DECRYPT: MIDDLE EAST ASSETS"):
-        st.session_state.logs.append("INTEL: Iranian missile silos in Isfahan showing increased thermal signatures.")
+    if st.button("DECRYPT: IRAN ASSETS"):
+        st.session_state.logs.append("INTEL: Satellite detects Kaman-22 drones deployment at Bandar Abbas.")
 with c2:
-    if st.button("DECRYPT: US/EU RESPONSE"):
-        st.session_state.logs.append("INTEL: US B-2 Bombers on standby at Diego Garcia. EU implementing oil price cap.")
+    if st.button("DECRYPT: US/EU NAVY"):
+        st.session_state.logs.append("INTEL: UK Royal Navy Destroyer joining US Strike Group in Gulf of Oman.")
 with c3:
-    if st.button("DECRYPT: MALAYSIA DEFENSE"):
-        st.session_state.logs.append("INTEL: ATM (Malaysian Armed Forces) increasing surveillance in South China Sea.")
+    if st.button("DECRYPT: MY INTEL"):
+        st.session_state.logs.append("INTEL: Special Branch monitoring potential cyber-threats to Putrajaya data centers.")
 
-# --- TACTICAL CRISIS TRIGGERS ---
+# --- TACTICAL TRIGGERS ---
 st.divider()
 st.subheader("🕹️ Strategic Crisis Triggers")
 t1, t2, t3 = st.columns(3)
 if t1.button("⚡ EXECUTE CYBER OVERRIDE"):
     st.session_state.oil_mult = 1.15
-    st.session_state.logs.append("CYBER: SCADA infiltration successful. Iranian energy distribution disrupted.")
-if t2.button("🚧 ACTIVATE HORMUZ BLOCKADE"):
+    st.session_state.logs.append("CYBER: Malware injected into Iranian SCADA networks.")
+if t2.button("🚧 BLOCKADE HORMUZ"):
     st.session_state.oil_mult = 1.50
-    st.session_state.logs.append("BLOCKADE: Global oil transit through Hormuz halted. DEFCON 1 initiated.")
-if t3.button("🚀 INITIATE PRE-EMPTIVE STRIKE"):
+    st.session_state.logs.append("BLOCKADE: Global oil transit ceased. Sovereign debt spiking.")
+if t3.button("🚀 PRE-EMPTIVE STRIKE"):
     st.session_state.oil_mult = 1.30
-    st.session_state.logs.append("KINETIC: Aerial strike on uranium enrichment facilities confirmed.")
+    st.session_state.logs.append("KINETIC: Targeted strikes on missile silos in Natanz.")
 
-# --- DYNAMIC MAPPING OF ALL 16 REGIONS ---
+# --- DYNAMIC MAPPING ---
 st.divider()
-st.subheader("📍 National Strategic Resource & Risk Mapping (Full Federation)")
+st.subheader("📍 National Strategic Resource & Risk Mapping")
+if st.session_state.protocol != "NORMAL":
+    st.error(f"CURRENT PROTOCOL: {st.session_state.protocol} ACTIVE")
 
 state_data = {
-    "State / Territory": [
+    "Region / State": [
         "W.P. Kuala Lumpur", "W.P. Putrajaya", "W.P. Labuan", "Selangor", "Penang", 
         "Johor", "Sarawak", "Sabah", "Terengganu", "Kedah", "Perak", "Pahang", 
         "Melaka", "Negeri Sembilan", "Kelantan", "Perlis"
     ],
-    "Strategic Resource": [
-        "National Financial Hub / Capital", "Administrative HQ / Governance", "Offshore Finance / O&G Hub", 
-        "Industrial & Logistics Center", "Global Semiconductor Hub (E&E)", "Manufacturing / O&G / Port", 
-        "Oil & Gas / Energy / Timber", "Palm Oil / Oil & Gas", "Oil & Gas (Export Terminal)", 
-        "Paddy Production (Food Security)", "Mineral Resources / Industrial", "Bauxite / Timber / Agriculture", 
-        "Energy Refineries / Tourism", "Aerospace / Manufacturing", "Mineral Deposits / Agriculture", 
+    "Key Resource": [
+        "Financial Hub / Capital", "Governance / Putrajaya HQ", "O&G Hub / Offshore Finance", 
+        "Industry & Logistics", "Global Semiconductors (E&E)", "Ports / O&G / Industry", 
+        "Energy / O&G / Timber", "Palm Oil / O&G", "O&G Export Terminal", 
+        "Rice (Food Security)", "Minerals / Industry", "Timber / Bauxite", 
+        "Refineries / Tourism", "Aerospace / Manufacturing", "Agriculture / Mineral", 
         "Border Trade / Agriculture"
     ]
 }
 
 df = pd.DataFrame(state_data)
 
-# Logik Penentuan Risiko Dinamik mengikut Multiplier
 def calculate_risk(row):
     m = st.session_state.oil_mult
-    state = row["State / Territory"]
-    if m > 1.4: # Senario Perang Besar (DEFCON 1)
+    state = row["Region / State"]
+    if m > 1.4:
         if state in ["W.P. Kuala Lumpur", "W.P. Putrajaya", "Penang", "Selangor", "Johor"]:
-            return "🔴 CRITICAL (High Priority)"
+            return "🔴 CRITICAL"
         return "🟠 HIGH RISK"
-    elif m > 1.1: # Senario Ketegangan (DEFCON 2)
-        if state in ["Penang", "Sarawak", "Terengganu", "Kedah"]:
-            return "🟠 HIGH (Supply Chain/Energy)"
+    elif m > 1.1:
+        if state in ["Penang", "Sarawak", "W.P. Labuan", "Kedah"]:
+            return "🟠 HIGH"
         return "🟡 MODERATE"
     else:
         return "🟢 STABLE"
 
-df["Live Status"] = df.apply(calculate_risk, axis=1)
-
-# Paparkan Jadual
+df["Strategic Risk Status"] = df.apply(calculate_risk, axis=1)
 st.dataframe(df, use_container_width=True, hide_index=True)
 
 # --- AI CO-STRATEGIST & LOGS ---
@@ -131,16 +139,15 @@ a1, a2 = st.columns([1, 2])
 with a1:
     st.subheader("🤖 AI CO-STRATEGIST")
     if st.session_state.oil_mult > 1.4:
-        st.error(f"DIRECTOR {OWNER_NAME.split()[0]}: Total disruption detected in Putrajaya's administrative lines. Financial markets in KL in freefall. Activate emergency gold reserves.")
+        st.error(f"DIRECTOR {OWNER_NAME.split()[0]}: Financial systems in KL are failing. Fuel subsidies at breaking point. Debt is RM {current_debt/1e12:.3f}T. Initiate Gold Standard backing.")
     elif st.session_state.oil_mult > 1.1:
-        st.warning(f"ADVISORY: Risk to Kedah's food security due to fertilizer cost. Logistics in Penang/Labuan under strain.")
+        st.warning(f"ADVISORY: Supply chain disruption in Penang E&E. Food security risk in Kedah. Ringgit pressure increasing.")
     else:
-        st.success("STATUS: Federal Territories stable. No immediate territorial threat detected.")
+        st.success("STATUS: Strategic Federation stable. Monitoring US/Iran missile activity.")
 
 with a2:
     st.subheader("📜 COMMAND LOG (LATEST)")
-    for log in reversed(st.session_state.logs[-5:]): # Tunjuk 5 log terakhir
+    for log in reversed(st.session_state.logs[-5:]):
         st.text(f"» {log}")
 
-st.divider()
-st.caption(f"© 2026 STRATEGIC DATA COMMAND | OWNERSHIP: {OWNER_NAME} | REAL-TIME DATA VIA FINANCIAL API")
+st.caption(f"© 2026 GEOPOLITICAL WAR ROOM | ANALYST: {OWNER_NAME} | DATA: LIVE FINANCIAL API")
