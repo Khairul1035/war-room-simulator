@@ -5,11 +5,11 @@ import time
 import datetime
 import random
 
-# --- CONFIGURATION ---
+# --- SETTINGS & OWNERSHIP ---
 st.set_page_config(page_title="Strategic War Room", layout="wide")
 OWNER_NAME = "MOHD KHAIRUL RIDHUAN BIN MOHD FADZIL"
 
-# --- DATA ENGINE ---
+# --- DATA ENGINE (WITH CACHING) ---
 @st.cache_data(ttl=600)
 def get_live_data():
     try:
@@ -22,99 +22,75 @@ def get_live_data():
 # --- SESSION STATE ---
 if 'logs' not in st.session_state: st.session_state.logs = []
 if 'oil_mult' not in st.session_state: st.session_state.oil_mult = 1.0
-if 'missile_stats' not in st.session_state: st.session_state.missile_stats = None
 
 # --- HEADER ---
-st.title("🛰️ GLOBAL STRATEGIC & ECONOMIC COMMAND CENTER")
-st.markdown(f"**Lead Analyst:** {OWNER_NAME} | **Focus:** Malaysia Macro-Risk Assessment")
+st.title("🛰️ NATIONAL STRATEGIC & DEBT CONTROL CENTER")
+st.markdown(f"**Lead Analyst:** {OWNER_NAME} | **Security:** Level 4 Data Integration")
 st.divider()
 
-# --- SIDEBAR: REAL-TIME FEED ---
+# --- SIDEBAR: LIVE TELEMETRY ---
 oil, gold, status = get_live_data()
 cur_oil = round(oil * st.session_state.oil_mult, 2)
 st.sidebar.header("📡 LIVE TELEMETRY")
 st.sidebar.metric("BRENT CRUDE", f"${cur_oil}", f"{round(st.session_state.oil_mult*100-100, 1)}% Shock")
 st.sidebar.metric("GOLD OUNCE", f"${gold}")
 st.sidebar.divider()
-st.sidebar.write("**Global Threat Level:**")
-st.sidebar.error("DEFCON 2" if st.session_state.oil_mult > 1.2 else "DEFCON 3")
 
-# --- TOP SECTION: MILITARY BALANCE ---
-st.subheader("⚔️ Regional Military Power Balance")
-a1, a2, a3 = st.columns(3)
-with a1:
-    st.write("**🇮🇷 IRAN (Offense)**")
-    st.progress(0.85)
-    st.caption("Ballistic Missiles: 3,000+ | Strategic Depth: High")
-with a2:
-    st.write("**🇺🇸 US 5TH FLEET**")
-    st.progress(0.95)
-    st.caption("Carrier Groups: 2 | Tomahawk Capacity: 800+")
-with a3:
-    st.write("**🇮🇱 ISRAEL (Defense)**")
-    st.progress(0.90)
-    st.caption("Interception Rate: 94% | Nuclear Capability: Undisclosed")
+# --- NEW: NATIONAL DEBT TRACKER ---
+st.sidebar.header("🏦 NATIONAL DEBT TRACKER")
+base_debt = 1500000000000 # Anggaran RM 1.5 Trillion
+sim_debt = base_debt + ((st.session_state.oil_mult - 1) * 50000000000) # RM 50B hike for every 10% shock
+st.sidebar.error(f"Est. Debt: RM {sim_debt/1e12:.3f} Trillion")
+st.sidebar.caption("Includes estimated subsidy leakages & currency depreciation impact.")
 
-# --- INTERACTIVE TRIGGER CONSOLE ---
-st.divider()
-c1, c2 = st.columns([2, 1])
+# --- TACTICAL TRIGGER CONSOLE ---
+col1, col2 = st.columns([2, 1])
 
-with c1:
-    st.subheader("🕹️ Tactical Trigger Console")
+with col1:
+    st.subheader("🕹️ Crisis Trigger Console")
     b1, b2, b3 = st.columns(3)
-    if b1.button("⚡ Cyber Escalation"):
+    if b1.button("⚡ Cyber Strike"):
         st.session_state.oil_mult = 1.10
-        st.session_state.logs.append("Cyber-warfare detected. Global banking systems on alert.")
+        st.session_state.logs.append("Cyber-warfare disrupts regional energy grids.")
     if b2.button("🚧 Hormuz Blockade"):
         st.session_state.oil_mult = 1.45
-        st.session_state.logs.append("Strait of Hormuz blocked. Global supply chain collapse.")
+        st.session_state.logs.append("Strait of Hormuz CLOSED. Energy supply chain halted.")
     if b3.button("🚀 Pre-emptive Strike"):
         st.session_state.oil_mult = 1.25
-        launched = random.randint(200, 500)
-        st.session_state.logs.append(f"Full-scale missile barrage. {launched} units launched.")
+        st.session_state.logs.append("Kinetic military escalation detected in the Persian Gulf.")
 
-with c2:
-    st.subheader("📜 Intelligence Feed")
-    for log in reversed(st.session_state.logs):
-        st.write(f"› {log}")
+with col2:
+    st.subheader("🤖 AI CO-STRATEGIST ALERT")
+    if st.session_state.oil_mult > 1.2:
+        st.error(f"**ALERT:** Lead Analyst {OWNER_NAME.split()[0]}, currency depreciation is exceeding safety limits. Immediate fiscal tightening advised.")
+    elif st.session_state.oil_mult > 1.0:
+        st.warning("**ADVISORY:** Monitor fuel subsidy expenditure. Risk of inflation spillover to food sector is HIGH.")
+    else:
+        st.success("**STATUS:** Global markets stable. Monitor geopolitical chatter.")
 
-# --- NEW SECTION: MALAYSIA DEEP IMPACT ANALYSIS ---
+# --- MALAYSIA GEOGRAPHICAL & SECTORAL RISK ---
 st.divider()
-st.header("🇲🇾 Malaysia National Risk Assessment")
-st.info(f"Report ID: MY-STRIKE-{datetime.datetime.now().strftime('%Y%m%d')}")
+st.subheader("📍 State-Level Industrial Risk Mapping")
+risk_data = {
+    "Region/State": ["Penang & Selangor", "Sarawak & Terengganu", "Johor", "Perak & Kedah", "Kuala Lumpur"],
+    "Primary Industry": ["Semiconductors (E&E)", "Oil & Gas / Energy", "Logistics & Food Processing", "Agriculture (Paddy/Rubber)", "Financial Services"],
+    "Conflict Impact": ["Supply chain delay (Critical)", "High Export Revenue / High Risk Area", "Freight cost surge", "Fertilizer cost hike (Food Security)", "Currency & Market Volatility"],
+    "Risk Level": ["RED", "ORANGE", "RED", "YELLOW", "RED"]
+}
+st.table(pd.DataFrame(risk_data))
 
-# Calculating Simulated Economic Data
+# --- ECONOMIC DEEP DIVE ---
+st.divider()
+st.subheader("📊 National Fiscal Strain Analysis")
 myr_base = 4.72
 sim_myr = round(myr_base + (st.session_state.oil_mult - 1), 2)
-inflation_rate = round(2.5 + (st.session_state.oil_mult - 1) * 20, 1)
-debt_burden = "High" if sim_myr > 4.80 else "Stable"
+ron95_cost = round(2.05 * st.session_state.oil_mult, 2)
 
 r1, r2, r3 = st.columns(3)
-r1.metric("USD/MYR Exchange", f"RM {sim_myr}", f"{round(sim_myr-myr_base, 2)} vs Base")
-r2.metric("Projected Inflation (CPI)", f"{inflation_rate}%", "Supply Shock")
-r3.metric("RON95 Price (w/o Subsidy)", f"RM {round(2.05 * st.session_state.oil_mult, 2)}", "Fiscal Strain")
+r1.metric("USD/MYR Exchange", f"RM {sim_myr}", f"{round(sim_myr-myr_base, 2)}")
+r2.metric("Projected Debt Hike", f"+ RM {(sim_debt-base_debt)/1e9:.1f} Billion")
+r3.metric("RON95 Market Value", f"RM {ron95_cost}")
 
-# DEEP ANALYSIS TABLE
-st.subheader("📊 Sectoral & Structural Risk Analysis")
-impact_data = {
-    "Domain": ["Sovereign Debt", "Food Security", "Semiconductor Industry", "Aviation & Tourism", "Oil & Gas (Petronas)"],
-    "Direct Effect": [
-        "Higher cost to service external debt.",
-        "Imported inflation on wheat & fertilizer.",
-        "Supply chain delay for E&E exports.",
-        "Increased jet fuel costs & route diversions.",
-        "Increased revenue but higher subsidy burden."
-    ],
-    "Risk Level": ["CRITICAL" if sim_myr > 4.85 else "MODERATE", "HIGH", "MODERATE", "HIGH", "STABLE"]
-}
-st.table(pd.DataFrame(impact_data))
-
-# INDUSTRY WINNERS & LOSERS
-w1, w2 = st.columns(2)
-with w1:
-    st.success("📈 Likely Beneficiaries: Oil & Gas Service Providers, Defense Contractors, Gold Miners.")
-with w2:
-    st.error("📉 Likely Vulnerable: Airlines, Consumer Goods, Construction (Material costs), Manufacturing.")
-
+# FOOTER
 st.divider()
-st.caption(f"© 2024 Strategic Research Portfolio | Lead Analyst: {OWNER_NAME} | Source: Yahoo Finance & Macro-logic Engine")
+st.caption(f"© 2026 National Strategic Dashboard | Ownership: {OWNER_NAME} | OSINT & Financial API Integration")
