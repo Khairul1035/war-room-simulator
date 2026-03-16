@@ -6,13 +6,25 @@ import datetime
 
 # --- SETTINGS & OWNERSHIP ---
 st.set_page_config(page_title="Strategic War Room", layout="wide")
-YOUR_NAME = "YOUR NAME HERE" # <--- CHANGE THIS
+YOUR_NAME = "MOHD KHAIRUL RIDHUAN BIN MOHD FADZIL" # <--- TUKAR NAMA ANDA DI SINI
 
-# --- REAL-TIME DATA ENGINE ---
+# --- REAL-TIME DATA ENGINE (WITH CACHING & ERROR HANDLING) ---
+@st.cache_data(ttl=600)  # Simpan data selama 10 minit (600 saat) untuk elak disekat
 def get_live_data():
-    oil = yf.Ticker("BZ=F").history(period="1d")['Close'].iloc[-1]
-    gold = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1]
-    return round(oil, 2), round(gold, 2)
+    try:
+        # Cuba tarik data dari Yahoo Finance
+        oil_ticker = yf.Ticker("BZ=F")
+        oil_data = oil_ticker.history(period="1d")
+        
+        gold_ticker = yf.Ticker("GC=F")
+        gold_data = gold_ticker.history(period="1d")
+        
+        oil_price = oil_data['Close'].iloc[-1]
+        gold_price = gold_data['Close'].iloc[-1]
+        return round(oil_price, 2), round(gold_price, 2), "Live"
+    except Exception as e:
+        # Jika gagal (Rate Limit), gunakan harga tetap (Fallback)
+        return 82.50, 2150.00, "Offline Mode (Rate Limited)"
 
 # --- SESSION STATE (The "Game" Memory) ---
 if 'logs' not in st.session_state:
@@ -22,16 +34,20 @@ if 'oil_multiplier' not in st.session_state:
 
 # --- HEADER ---
 st.title("🔴 GLOBAL STRATEGIC CRISIS SIMULATOR")
-st.markdown(f"**Lead Strategic Analyst:** {YOUR_NAME} | **System Status:** DEFCON 2")
+st.markdown(f"**Lead Strategic Analyst:** {MOHD KHAIRUL RIDHUAN BIN MOHD FADZIL} | **System Status:** DEFCON 2")
 st.divider()
 
 # --- SIDEBAR (Real-Time Metrics) ---
-oil_price, gold_price = get_live_data()
+oil_price, gold_price, status = get_live_data()
 current_oil = round(oil_price * st.session_state.oil_multiplier, 2)
 
-st.sidebar.header("📊 LIVE DATA FEED")
+st.sidebar.header("📊 DATA FEED")
+if status != "Live":
+    st.sidebar.warning("API Limit Reached. Using Buffer Data.")
+
 st.sidebar.metric("BRENT CRUDE OIL", f"${current_oil}", delta=f"{round(st.session_state.oil_multiplier*100-100, 1)}% Shock")
 st.sidebar.metric("GOLD (XAU/USD)", f"${gold_price}")
+st.sidebar.write(f"Data Status: {status}")
 st.sidebar.write(f"Last Sync: {datetime.datetime.now().strftime('%H:%M:%S')}")
 
 # --- THE GAME BOARD ---
@@ -63,10 +79,12 @@ with col1:
         for percent_complete in range(100):
             time.sleep(0.01)
             progress_bar.progress(percent_complete + 1)
-        st.success("Simulation Calculation Complete.")
+        st.success("Strategic Calculation Complete.")
 
 with col2:
     st.subheader("Intelligence Log")
+    if not st.session_state.logs:
+        st.write("Waiting for operational data...")
     for log in reversed(st.session_state.logs):
         st.write(log)
 
@@ -74,8 +92,8 @@ with col2:
 st.divider()
 st.subheader("🇲🇾 Malaysia National Impact Assessment")
 m1, m2, m3 = st.columns(3)
-m1.metric("Petrol Price (RON95)", "RM2.05", "Floating Risk")
+m1.metric("Petrol Price (RON95 Est.)", f"RM {round(2.05 * st.session_state.oil_multiplier, 2)}", "Subsidy Pressure")
 m2.metric("MYR/USD Exchange", "4.75", "-0.12")
 m3.metric("Stock Market (KLCI)", "1,540", "-2.5%")
 
-st.caption(f"Project Ownership: {YOUR_NAME} | Source: Yahoo Finance Real-time API")
+st.caption(f"Project Ownership: {MOHD KHAIRUL RIDHUAN BIN MOHD FADZIL} | Built with Real-time Financial APIs")
