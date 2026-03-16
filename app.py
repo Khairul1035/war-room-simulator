@@ -32,7 +32,6 @@ html, body, [class*="st-"] {
     color: #1E293B;
 }
 
-/* Metrics Styling */
 div[data-testid="stMetric"] {
     background: #FFFFFF;
     border: 1px solid #E2E8F0;
@@ -41,22 +40,11 @@ div[data-testid="stMetric"] {
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
-/* Sidebar Dark Mode */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%) !important;
 }
 [data-testid="stSidebar"] * {
     color: #F1F5F9 !important;
-}
-
-/* Corporate Card System */
-.card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    margin-bottom: 1rem;
 }
 
 .policy-box {
@@ -65,6 +53,7 @@ div[data-testid="stMetric"] {
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-top: 20px;
 }
 
 .footer-note {
@@ -89,19 +78,32 @@ if "selected_page" not in st.session_state: st.session_state.selected_page = "Ex
 @st.cache_data(ttl=300)
 def get_market_data():
     try:
-        # Menarik data dari Yahoo Finance (Brent, Gold, USD/MYR)
         oil = yf.Ticker("BZ=F").history(period="1mo")["Close"].dropna()
         gold = yf.Ticker("GC=F").history(period="1mo")["Close"].dropna()
         fx = yf.Ticker("MYR=X").history(period="1mo")["Close"].dropna()
-        return {"oil_now": oil.iloc[-1], "gold_now": gold.iloc[-1], "fx_now": fx.iloc[-1], "oil_series": oil, "gold_series": gold, "fx_series": fx}
+        return {
+            "oil_now": oil.iloc[-1], 
+            "gold_now": gold.iloc[-1], 
+            "fx_now": fx.iloc[-1], 
+            "oil_series": oil, 
+            "gold_series": gold, 
+            "fx_series": fx
+        }
     except:
-        # Fallback data sekiranya API gagal
         idx = pd.date_range(end=pd.Timestamp.today(), periods=10)
         s = pd.Series([85.0]*10, index=idx)
-        return {"oil_now": 85.0, "gold_now": 5040.0, "fx_now": 4.72, "oil_series": s, "gold_series": s*60, "fx_series": s/20}
+        return {
+            "oil_now": 85.0, "gold_now": 5040.0, "fx_now": 4.72, 
+            "oil_series": s, "gold_series": s*60, "fx_series": s/20
+        }
+
+def get_risk_label(mult):
+    if mult >= 1.35: return "CRITICAL"
+    elif mult >= 1.15: return "WATCH"
+    return "STABLE"
 
 def build_full_malaysia_data(mult):
-    # Data lengkap 13 Negeri + 3 Wilayah Persekutuan
+    label = get_risk_label(mult)
     data = [
         ("W.P. Kuala Lumpur", "Financial Hub", "Tier 1", 3.139, 101.686),
         ("W.P. Putrajaya", "Governance HQ", "Tier 1", 2.926, 101.696),
@@ -121,33 +123,18 @@ def build_full_malaysia_data(mult):
         ("Perlis", "Agriculture & Border", "Tier 3", 6.444, 100.204)
     ]
     df = pd.DataFrame(data, columns=["State / Territory", "Strategic Domain", "Priority", "lat", "lon"])
-    
-    # Logik Risiko
-    if mult >= 1.35: label = "Critical"
-    elif mult >= 1.10: label = "Watch"
-    else: label = "Stable"
-    
     df["Risk Status"] = label
     df["Stress Score"] = df["Priority"].map({"Tier 1": 85, "Tier 2": 70, "Tier 3": 55}) * mult
     return df
 
 # ==============================================================================
-# 5. VISUALS
-# ==============================================================================
-def malaysia_map(df):
-    fig = px.scatter_geo(df, lat="lat", lon="lon", color="Risk Status", size="Stress Score", 
-                         hover_name="State / Territory", color_discrete_map={"Stable":"#16A34A", "Watch":"#F59E0B", "Critical":"#DC2626"})
-    fig.update_geos(lataxis_range=[0, 8], lonaxis_range=[99, 120], showcountries=True, countrycolor="#CBD5E1", fitbounds="locations")
-    fig.update_layout(height=500, margin=dict(l=0, r=0, t=0, b=0))
-    return fig
-
-# ==============================================================================
-# 6. SIDEBAR & LOGIC
+# 5. SIDEBAR & LOGIC
 # ==============================================================================
 snap = get_market_data()
 oil_adj = round(snap["oil_now"] * st.session_state.oil_mult, 2)
 fx_adj = round(snap["fx_now"] + (st.session_state.oil_mult - 1.0), 4)
 debt_val = 1.525e12 + ((st.session_state.oil_mult - 1.0) * 85e9)
+risk_status = get_risk_label(st.session_state.oil_mult)
 
 with st.sidebar:
     st.markdown(f"### Lead Researcher\n**{RESEARCHER_NAME}**")
@@ -157,7 +144,7 @@ with st.sidebar:
     st.caption("Includes estimated subsidy & FX shock.")
     
     st.divider()
-    st.session_state.selected_page = st.radio("Navigation", ["Executive Dashboard", "Operations Page", "Risk Page"])
+    st.session_state.selected_page = st.radio("Navigation", ["Executive Dashboard", "Risk Page", "Operations Page"])
     
     st.divider()
     scen = st.selectbox("Strategic Scenario", ["Normal Baseline", "Cyber Disruption", "Trade Route Stress", "Hormuz Blockade", "Pre-Emptive Strike"])
@@ -165,9 +152,10 @@ with st.sidebar:
         mapping = {"Normal Baseline": 1.0, "Cyber Disruption": 1.12, "Trade Route Stress": 1.22, "Hormuz Blockade": 1.45, "Pre-Emptive Strike": 1.25}
         st.session_state.scenario_name = scen
         st.session_state.oil_mult = mapping[scen]
+        st.session_state.logs.append(f"{datetime.datetime.now().strftime('%H:%M')} | Scenario: {scen} applied.")
 
 # ==============================================================================
-# 7. MAIN INTERFACE
+# 6. MAIN INTERFACE
 # ==============================================================================
 st.title("Malaysia Strategic Outlook Dashboard")
 st.caption(f"Researcher: {RESEARCHER_NAME} | {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
@@ -194,26 +182,36 @@ if st.session_state.selected_page == "Executive Dashboard":
     c[1].plotly_chart(line(snap["gold_series"], "Gold Trend"), use_container_width=True)
     c[2].plotly_chart(line(snap["fx_series"], "FX Trend"), use_container_width=True)
     
-    st.markdown(f"""<div class="policy-box"><h4>Strategic Insight</h4>
-    The current scenario <b>{st.session_state.scenario_name}</b> suggests a risk posture of <b>{get_market_data()}</b>. 
-    Fiscal pressure on the federal debt (RM {debt_val/1e12:.3f}T) requires immediate supply chain surveillance.</div>""", unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="policy-box">
+        <h4>Strategic Insight</h4>
+        The current scenario <b>{st.session_state.scenario_name}</b> suggests a risk posture of <b style="color:{'red' if risk_status=='CRITICAL' else '#2563EB'}">{risk_status}</b>. 
+        Fiscal pressure on the federal debt (Estimated at RM {debt_val/1e12:.3f}T) requires immediate supply chain and energy market surveillance.
+    </div>
+    """, unsafe_allow_html=True)
 
 # PAGE: RISK
 elif st.session_state.selected_page == "Risk Page":
     st.subheader("National Strategic Risk Map (Full Federation)")
     df = build_full_malaysia_data(st.session_state.oil_mult)
     
-    st.plotly_chart(malaysia_map(df), use_container_width=True)
+    fig = px.scatter_geo(df, lat="lat", lon="lon", color="Risk Status", size="Stress Score", 
+                         hover_name="State / Territory", color_discrete_map={"STABLE":"#16A34A", "WATCH":"#F59E0B", "CRITICAL":"#DC2626"})
+    fig.update_geos(lataxis_range=[0, 9], lonaxis_range=[98, 121], showcountries=True, countrycolor="#CBD5E1", fitbounds="locations")
+    fig.update_layout(height=550, margin=dict(l=0, r=0, t=0, b=0))
+    st.plotly_chart(fig, use_container_width=True)
     
-    # Table of all 16 locations
     st.markdown("#### Detailed Risk Inventory")
     st.dataframe(df.drop(columns=["lat", "lon"]), use_container_width=True, hide_index=True)
 
 # PAGE: OPERATIONS
 elif st.session_state.selected_page == "Operations Page":
-    st.subheader("Command Logs & Monitoring")
-    st.info(f"System operating under {st.session_state.scenario_name} protocol.")
-    st.code("08:00 | System Online\n08:15 | Monitoring Brent Crude Feed\n09:00 | State-level risk assessment refreshed", language="bash")
+    st.subheader("System Command Logs")
+    if not st.session_state.logs:
+        st.write("Awaiting system telemetry...")
+    else:
+        log_text = "\n".join(reversed(st.session_state.logs[-15:]))
+        st.code(log_text, language="bash")
 
 st.divider()
 st.markdown(f"<div class='footer-note'>© 2026 Malaysia Strategic Outlook Dashboard | Researcher: {RESEARCHER_NAME}</div>", unsafe_allow_html=True)
