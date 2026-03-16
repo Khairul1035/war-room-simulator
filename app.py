@@ -4,6 +4,7 @@ import pandas as pd
 import datetime
 import plotly.graph_objects as go
 import plotly.express as px
+from fpdf import FPDF
 
 # ==============================================================================
 # 1. PAGE CONFIGURATION & OWNERSHIP
@@ -22,45 +23,13 @@ RESEARCHER_NAME = "MOHD KHAIRUL RIDHUAN BIN MOHD FADZIL"
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-html, body, [class*="st-"] {
-    font-family: 'Inter', sans-serif;
-}
-
-.stApp {
-    background: #F8FAFC;
-    color: #1E293B;
-}
-
-div[data-testid="stMetric"] {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 15px 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%) !important;
-}
-[data-testid="stSidebar"] * {
-    color: #F1F5F9 !important;
-}
-
-.policy-box {
-    background: #FFFFFF;
-    border-left: 5px solid #2563EB;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    margin-top: 20px;
-}
-
-.footer-note {
-    color: #64748B;
-    font-size: 0.85rem;
-    text-align: center;
-}
+html, body, [class*="st-"] { font-family: 'Inter', sans-serif; }
+.stApp { background: #F8FAFC; color: #1E293B; }
+div[data-testid="stMetric"] { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 15px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+[data-testid="stSidebar"] { background: linear-gradient(180deg, #0F172A 0%, #1E293B 100%) !important; }
+[data-testid="stSidebar"] * { color: #F1F5F9 !important; }
+.policy-box { background: #FFFFFF; border-left: 5px solid #2563EB; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-top: 20px; }
+.footer-note { color: #64748B; font-size: 0.85rem; text-align: center; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -81,21 +50,9 @@ def get_market_data():
         oil = yf.Ticker("BZ=F").history(period="1mo")["Close"].dropna()
         gold = yf.Ticker("GC=F").history(period="1mo")["Close"].dropna()
         fx = yf.Ticker("MYR=X").history(period="1mo")["Close"].dropna()
-        return {
-            "oil_now": oil.iloc[-1], 
-            "gold_now": gold.iloc[-1], 
-            "fx_now": fx.iloc[-1], 
-            "oil_series": oil, 
-            "gold_series": gold, 
-            "fx_series": fx
-        }
+        return {"oil_now": oil.iloc[-1], "gold_now": gold.iloc[-1], "fx_now": fx.iloc[-1], "oil_series": oil, "gold_series": gold, "fx_series": fx}
     except:
-        idx = pd.date_range(end=pd.Timestamp.today(), periods=10)
-        s = pd.Series([85.0]*10, index=idx)
-        return {
-            "oil_now": 85.0, "gold_now": 5040.0, "fx_now": 4.72, 
-            "oil_series": s, "gold_series": s*60, "fx_series": s/20
-        }
+        return {"oil_now": 85.0, "gold_now": 5040.0, "fx_now": 4.72, "oil_series": pd.Series([85]*10), "gold_series": pd.Series([5040]*10), "fx_series": pd.Series([4.72]*10)}
 
 def get_risk_label(mult):
     if mult >= 1.35: return "CRITICAL"
@@ -127,6 +84,39 @@ def build_full_malaysia_data(mult):
     df["Stress Score"] = df["Priority"].map({"Tier 1": 85, "Tier 2": 70, "Tier 3": 55}) * mult
     return df
 
+# PDF Generation Function
+def create_pdf(researcher, scenario, risk, oil, gold, fx, debt):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", 'B', 16)
+    pdf.cell(200, 10, "Strategic Outlook Report: Malaysia", ln=True, align='C')
+    pdf.set_font("Arial", '', 10)
+    pdf.cell(200, 10, f"Generated on: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True, align='C')
+    pdf.ln(10)
+    
+    pdf.set_font("Arial", 'B', 12)
+    pdf.cell(0, 10, f"Researcher: {researcher}", ln=True)
+    pdf.cell(0, 10, f"Operating Scenario: {scenario}", ln=True)
+    pdf.cell(0, 10, f"Risk Posture: {risk}", ln=True)
+    pdf.ln(5)
+    
+    pdf.set_font("Arial", 'B', 11)
+    pdf.cell(0, 10, "Strategic Metrics:", ln=True)
+    pdf.set_font("Arial", '', 11)
+    pdf.cell(0, 10, f"- Brent Crude Oil: USD {oil:,.2f}", ln=True)
+    pdf.cell(0, 10, f"- Gold Price: USD {gold:,.2f}", ln=True)
+    pdf.cell(0, 10, f"- USD/MYR Rate: RM {fx:,.4f}", ln=True)
+    pdf.cell(0, 10, f"- Federal Debt Exposure: RM {debt/1e12:.3f}T", ln=True)
+    pdf.ln(10)
+    
+    pdf.set_font("Arial", 'B', 11)
+    pdf.cell(0, 10, "Policy Insight:", ln=True)
+    pdf.set_font("Arial", 'I', 11)
+    insight = "Higher energy costs and currency volatility suggest immediate surveillance of national supply chains."
+    pdf.multi_cell(0, 10, insight)
+    
+    return pdf.output(dest='S')
+
 # ==============================================================================
 # 5. SIDEBAR & LOGIC
 # ==============================================================================
@@ -139,9 +129,8 @@ risk_status = get_risk_label(st.session_state.oil_mult)
 with st.sidebar:
     st.markdown(f"### Lead Researcher\n**{RESEARCHER_NAME}**")
     st.divider()
-    st.markdown("### Federal Debt Tracker")
     st.markdown(f"## RM {debt_val/1e12:.3f}T")
-    st.caption("Includes estimated subsidy & FX shock.")
+    st.caption("Federal Debt Exposure")
     
     st.divider()
     st.session_state.selected_page = st.radio("Navigation", ["Executive Dashboard", "Risk Page", "Operations Page"])
@@ -152,15 +141,19 @@ with st.sidebar:
         mapping = {"Normal Baseline": 1.0, "Cyber Disruption": 1.12, "Trade Route Stress": 1.22, "Hormuz Blockade": 1.45, "Pre-Emptive Strike": 1.25}
         st.session_state.scenario_name = scen
         st.session_state.oil_mult = mapping[scen]
-        st.session_state.logs.append(f"{datetime.datetime.now().strftime('%H:%M')} | Scenario: {scen} applied.")
+
+    st.divider()
+    # PDF DOWNLOAD BUTTON
+    pdf_data = create_pdf(RESEARCHER_NAME, st.session_state.scenario_name, risk_status, oil_adj, snap['gold_now'], fx_adj, debt_val)
+    st.download_button(label="📄 Download PDF Report", data=pdf_data, file_name=f"Strategic_Report_{st.session_state.scenario_name}.pdf", mime="application/pdf")
 
 # ==============================================================================
 # 6. MAIN INTERFACE
 # ==============================================================================
 st.title("Malaysia Strategic Outlook Dashboard")
-st.caption(f"Researcher: {RESEARCHER_NAME} | {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}")
+st.caption(f"Last Sync: {datetime.datetime.now().strftime('%H:%M')} | Data: Real-Time via Financial APIs")
 
-# Top Metrics
+# Metrics
 m = st.columns(4)
 m[0].metric("Brent Oil", f"${oil_adj}", f"{(st.session_state.oil_mult-1)*100:.1f}%")
 m[1].metric("Gold Price", f"${snap['gold_now']:.2f}", "Live")
@@ -171,13 +164,11 @@ m[3].metric("Inflation (Proj)", f"{round(2.5 + (st.session_state.oil_mult-1)*15,
 if st.session_state.selected_page == "Executive Dashboard":
     st.subheader("Market Trend Analysis")
     c = st.columns(3)
-    
     def line(series, title, m=1.0):
         fig = go.Figure(go.Scatter(x=series.index, y=series.values*m, mode="lines", fill="tozeroy", line=dict(color="#2563EB", width=3)))
         fig.update_layout(height=200, margin=dict(l=0, r=0, t=30, b=0), title=title, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
         fig.update_xaxes(visible=False); fig.update_yaxes(gridcolor="#E2E8F0")
         return fig
-        
     c[0].plotly_chart(line(snap["oil_series"], "Oil Trend", st.session_state.oil_mult), use_container_width=True)
     c[1].plotly_chart(line(snap["gold_series"], "Gold Trend"), use_container_width=True)
     c[2].plotly_chart(line(snap["fx_series"], "FX Trend"), use_container_width=True)
@@ -186,32 +177,20 @@ if st.session_state.selected_page == "Executive Dashboard":
     <div class="policy-box">
         <h4>Strategic Insight</h4>
         The current scenario <b>{st.session_state.scenario_name}</b> suggests a risk posture of <b style="color:{'red' if risk_status=='CRITICAL' else '#2563EB'}">{risk_status}</b>. 
-        Fiscal pressure on the federal debt (Estimated at RM {debt_val/1e12:.3f}T) requires immediate supply chain and energy market surveillance.
+        Fiscal pressure on the federal debt (RM {debt_val/1e12:.3f}T) requires immediate surveillance.
     </div>
     """, unsafe_allow_html=True)
 
 # PAGE: RISK
 elif st.session_state.selected_page == "Risk Page":
-    st.subheader("National Strategic Risk Map (Full Federation)")
+    st.subheader("National Strategic Risk Map")
     df = build_full_malaysia_data(st.session_state.oil_mult)
-    
     fig = px.scatter_geo(df, lat="lat", lon="lon", color="Risk Status", size="Stress Score", 
                          hover_name="State / Territory", color_discrete_map={"STABLE":"#16A34A", "WATCH":"#F59E0B", "CRITICAL":"#DC2626"})
     fig.update_geos(lataxis_range=[0, 9], lonaxis_range=[98, 121], showcountries=True, countrycolor="#CBD5E1", fitbounds="locations")
     fig.update_layout(height=550, margin=dict(l=0, r=0, t=0, b=0))
     st.plotly_chart(fig, use_container_width=True)
-    
-    st.markdown("#### Detailed Risk Inventory")
     st.dataframe(df.drop(columns=["lat", "lon"]), use_container_width=True, hide_index=True)
-
-# PAGE: OPERATIONS
-elif st.session_state.selected_page == "Operations Page":
-    st.subheader("System Command Logs")
-    if not st.session_state.logs:
-        st.write("Awaiting system telemetry...")
-    else:
-        log_text = "\n".join(reversed(st.session_state.logs[-15:]))
-        st.code(log_text, language="bash")
 
 st.divider()
 st.markdown(f"<div class='footer-note'>© 2026 Malaysia Strategic Outlook Dashboard | Researcher: {RESEARCHER_NAME}</div>", unsafe_allow_html=True)
