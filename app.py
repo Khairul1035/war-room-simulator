@@ -84,14 +84,14 @@ def build_full_malaysia_data(mult):
     df["Stress Score"] = df["Priority"].map({"Tier 1": 85, "Tier 2": 70, "Tier 3": 55}) * mult
     return df
 
-# PDF Generation Function
+# PDF Generation Function - FIXED FOR BYTES SUPPORT
 def create_pdf(researcher, scenario, risk, oil, gold, fx, debt):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, "Strategic Outlook Report: Malaysia", ln=True, align='C')
+    pdf.cell(190, 10, "Strategic Outlook Report: Malaysia", ln=True, align='C')
     pdf.set_font("Arial", '', 10)
-    pdf.cell(200, 10, f"Generated on: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True, align='C')
+    pdf.cell(190, 10, f"Generated on: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')}", ln=True, align='C')
     pdf.ln(10)
     
     pdf.set_font("Arial", 'B', 12)
@@ -112,10 +112,11 @@ def create_pdf(researcher, scenario, risk, oil, gold, fx, debt):
     pdf.set_font("Arial", 'B', 11)
     pdf.cell(0, 10, "Policy Insight:", ln=True)
     pdf.set_font("Arial", 'I', 11)
-    insight = "Higher energy costs and currency volatility suggest immediate surveillance of national supply chains."
+    insight = "Higher energy costs and currency volatility suggest immediate surveillance of national supply chains. Strategic reserves and fiscal buffers should be monitored closely."
     pdf.multi_cell(0, 10, insight)
     
-    return pdf.output(dest='S')
+    # Return as bytes instead of string to fix Streamlit Error
+    return bytes(pdf.output())
 
 # ==============================================================================
 # 5. SIDEBAR & LOGIC
@@ -143,9 +144,17 @@ with st.sidebar:
         st.session_state.oil_mult = mapping[scen]
 
     st.divider()
-    # PDF DOWNLOAD BUTTON
-    pdf_data = create_pdf(RESEARCHER_NAME, st.session_state.scenario_name, risk_status, oil_adj, snap['gold_now'], fx_adj, debt_val)
-    st.download_button(label="📄 Download PDF Report", data=pdf_data, file_name=f"Strategic_Report_{st.session_state.scenario_name}.pdf", mime="application/pdf")
+    # PDF DOWNLOAD LOGIC - FIXED
+    try:
+        pdf_bytes = create_pdf(RESEARCHER_NAME, st.session_state.scenario_name, risk_status, oil_adj, snap['gold_now'], fx_adj, debt_val)
+        st.download_button(
+            label="📄 Download PDF Report", 
+            data=pdf_bytes, 
+            file_name=f"Strategic_Report_{st.session_state.scenario_name}.pdf", 
+            mime="application/pdf"
+        )
+    except Exception as e:
+        st.error("Error generating PDF. Please ensure all data is loaded.")
 
 # ==============================================================================
 # 6. MAIN INTERFACE
