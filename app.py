@@ -6,52 +6,89 @@ import datetime
 import random
 
 # --- SETTINGS & OWNERSHIP ---
-st.set_page_config(page_title="STRATEGIC COMMAND CENTER", layout="wide")
+st.set_page_config(page_title="Strategic Intelligence Dashboard", layout="wide")
 OWNER_NAME = "MOHD KHAIRUL RIDHUAN BIN MOHD FADZIL"
 
-# --- IMPROVED CSS (BETTER CONTRAST & READABILITY) ---
+# --- MODERN CORPORATE CSS (8px Spacing System & Bloomberg Palette) ---
 st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-    /* Background & Main Text */
-    .main { background-color: #0b0f19; color: #ffffff; }
-    p, span, label { color: #ffffff !important; font-weight: 400; }
-    h1, h2, h3 { color: #ff3333 !important; text-transform: uppercase; letter-spacing: 2px; }
+    /* Global Styles */
+    html, body, [class*="st-"] {
+        font-family: 'Inter', sans-serif;
+        background-color: #F5F7FA;
+        color: #1F2937;
+    }
     
+    /* Sidebar Styling (Dark Corporate) */
+    [data-testid="stSidebar"] {
+        background-color: #0B1F33 !important;
+        border-right: 1px solid #E5E7EB;
+    }
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p {
+        color: #D6E2F0 !important;
+        font-size: 14px;
+    }
+    [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+        color: #FFFFFF !important;
+    }
+
+    /* Card System */
+    .data-card {
+        background-color: #FFFFFF;
+        border: 1px solid #E3E8EF;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        margin-bottom: 24px;
+        transition: all 0.2s ease;
+    }
+    .data-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+
     /* Metrics Styling */
-    div[data-testid="stMetricValue"] { color: #00ffcc !important; font-family: 'Courier New', monospace; font-size: 2rem !important; }
-    div[data-testid="stMetricDelta"] { color: #ff3333 !important; }
+    .metric-title { color: #6B7280; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .metric-value { color: #111827; font-size: 24px; font-weight: 700; margin: 4px 0; }
+    .metric-delta-pos { color: #16A34A; font-size: 13px; font-weight: 500; }
+    .metric-delta-neg { color: #DC2626; font-size: 13px; font-weight: 500; }
+
+    /* Button Design (Soft Corporate) */
+    .stButton>button {
+        width: 100%;
+        background-color: #FFFFFF;
+        color: #1F2937;
+        border: 1px solid #E5E7EB;
+        border-radius: 8px;
+        padding: 10px 18px;
+        font-weight: 500;
+        font-size: 14px;
+        transition: all 0.2s ease;
+    }
+    .stButton>button:hover {
+        background-color: #F3F4F6;
+        border-color: #D1D5DB;
+    }
     
-    /* Sidebar Styling */
-    section[data-testid="stSidebar"] { background-color: #161b22 !important; border-right: 1px solid #30363d; }
-    section[data-testid="stSidebar"] p, section[data-testid="stSidebar"] span { color: #ffffff !important; }
-
-    /* Buttons Styling - Tactical Look */
-    .stButton>button { 
-        width: 100%; 
-        border-radius: 4px; 
-        border: 1px solid #ff3333; 
-        background-color: #21262d; 
-        color: #ff3333 !important; 
-        font-weight: bold;
-        transition: 0.3s;
+    /* Primary Action Button (Blue) */
+    div.stButton > button:first-child {
+        border: none;
     }
-    .stButton>button:hover { 
-        background-color: #ff3333; 
-        color: #ffffff !important; 
-        box-shadow: 0 0 15px #ff3333;
+    
+    /* Intelligence Table */
+    .stTable {
+        background-color: white;
+        border-radius: 8px;
+        overflow: hidden;
     }
 
-    /* Log Container */
-    .log-box {
-        background-color: #0d1117;
-        border: 1px solid #30363d;
-        padding: 15px;
-        border-radius: 5px;
-        font-family: 'Courier New', monospace;
-        color: #00ffcc;
-        height: 200px;
-        overflow-y: scroll;
-    }
+    /* Status Indicators */
+    .status-active { color: #16A34A; font-size: 12px; font-weight: 600; }
+    
+    /* Hide Streamlit elements */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
     </style>
     """, unsafe_allow_html=True)
 
@@ -62,126 +99,115 @@ def get_live_data():
         oil = yf.Ticker("BZ=F").history(period="1d")['Close'].iloc[-1]
         gold = yf.Ticker("GC=F").history(period="1d")['Close'].iloc[-1]
         usd_myr = yf.Ticker("MYR=X").history(period="1d")['Close'].iloc[-1]
-        return round(oil, 2), round(gold, 2), round(usd_myr, 2), "CONNECTED"
+        return round(oil, 2), round(gold, 2), round(usd_myr, 2), "Active"
     except:
-        return 88.40, 2180.00, 4.75, "BUFFER"
+        return 88.42, 2184.10, 4.74, "Cached"
 
 # --- SESSION STATE ---
-if 'logs' not in st.session_state: st.session_state.logs = ["System initialized... Access granted."]
+if 'logs' not in st.session_state: st.session_state.logs = []
 if 'oil_mult' not in st.session_state: st.session_state.oil_mult = 1.0
 if 'protocol' not in st.session_state: st.session_state.protocol = "STANDBY"
 
-# --- HEADER ---
-st.markdown(f"<h1 style='text-align: center;'>🛰️ GLOBAL COMMAND & CONTROL CENTER</h1>", unsafe_allow_html=True)
-st.markdown(f"<p style='text-align: center; color: #00ffcc !important;'>DIRECTOR: {OWNER_NAME} | SECURITY: TOP SECRET | CLEARANCE: LEVEL 4</p>", unsafe_allow_html=True)
+# --- SIDEBAR (Dark Corporate) ---
+with st.sidebar:
+    st.markdown(f"### STRATEGIC INTEL")
+    st.markdown(f"**DIRECTOR:**  \n{OWNER_NAME}")
+    st.divider()
+    
+    # Debt Tracker in Sidebar
+    base_debt = 1.5e12 
+    current_debt = base_debt + ((st.session_state.oil_mult - 1) * 85e9)
+    st.markdown("FEDERAL DEBT TRACKER")
+    st.markdown(f"## RM {current_debt/1e12:.4f}T")
+    st.caption("Includes emergency fiscal buffers.")
+    
+    st.divider()
+    st.markdown("EMERGENCY PROTOCOLS")
+    if st.button("National Mobilization"):
+        st.session_state.protocol = "MOBILIZATION"
+        st.session_state.logs.append(f"{datetime.datetime.now().strftime('%H:%M')} - ATM Level 1 Alert")
+    if st.button("Evacuation Order"):
+        st.session_state.protocol = "EVACUATION"
+        st.session_state.logs.append(f"{datetime.datetime.now().strftime('%H:%M')} - Putrajaya Evacuation initiated")
 
-# --- SIDEBAR: GLOBAL TELEMETRY ---
+# --- MAIN CONTENT ---
+# Header
+st.markdown(f"<h3 style='margin-bottom: 0;'>Global Strategic Intelligence Dashboard</h3>", unsafe_allow_html=True)
+st.markdown(f"<p style='color: #6B7280; font-size: 14px;'>Lead Analyst: {OWNER_NAME} | {datetime.datetime.now().strftime('%d %B %Y %H:%M:%S')}</p>", unsafe_allow_html=True)
+
+# 1. TOP STRATEGIC METRICS (Horizontal Layout)
 oil, gold, usd_myr, status = get_live_data()
 cur_oil = round(oil * st.session_state.oil_mult, 2)
-st.sidebar.title("📡 TELEMETRY")
-st.sidebar.metric("BRENT CRUDE OIL", f"${cur_oil}", f"{round(st.session_state.oil_mult*100-100, 1)}% Shock")
-st.sidebar.metric("GOLD OUNCE", f"${gold}")
-st.sidebar.metric("USD/MYR EXCHANGE", f"RM {round(usd_myr + (st.session_state.oil_mult-1),2)}")
-st.sidebar.divider()
+shock_val = round(st.session_state.oil_mult*100-100, 1)
 
-# --- NATIONAL DEBT TRACKER ---
-base_debt = 1.5e12 
-current_debt = base_debt + ((st.session_state.oil_mult - 1) * 85e9)
-st.sidebar.subheader("🏦 NATIONAL DEBT")
-st.sidebar.error(f"RM {current_debt/1e12:.4f} TRILLION")
+m1, m2, m3, m4 = st.columns(4)
+with m1:
+    st.markdown(f"""<div class="data-card">
+        <div class="metric-title">Brent Crude Oil</div>
+        <div class="metric-value">${cur_oil}</div>
+        <div class="{'metric-delta-pos' if shock_val <= 0 else 'metric-delta-neg'}">{'+' if shock_val > 0 else ''}{shock_val}% Volatility</div>
+    </div>""", unsafe_allow_html=True)
+with m2:
+    st.markdown(f"""<div class="data-card">
+        <div class="metric-title">Gold (XAU/USD)</div>
+        <div class="metric-value">${gold}</div>
+        <div class="status-active">● Market Active</div>
+    </div>""", unsafe_allow_html=True)
+with m3:
+    st.markdown(f"""<div class="data-card">
+        <div class="metric-title">USD/MYR Exchange</div>
+        <div class="metric-value">RM {round(usd_myr + (st.session_state.oil_mult-1), 2)}</div>
+        <div class="metric-delta-neg">Impacted by Risk</div>
+    </div>""", unsafe_allow_html=True)
+with m4:
+    st.markdown(f"""<div class="data-card">
+        <div class="metric-title">National Inflation (CPI)</div>
+        <div class="metric-value">{round(2.5 + (st.session_state.oil_mult-1)*15, 1)}%</div>
+        <div class="status-active" style="color:#F59E0B">● Warning Phase</div>
+    </div>""", unsafe_allow_html=True)
 
-# --- EMERGENCY PROTOCOLS ---
-st.sidebar.divider()
-if st.sidebar.button("⚔️ ACTIVATE MOBILIZATION"):
-    st.session_state.protocol = "MOBILIZATION"
-    st.session_state.logs.append(f"[{datetime.datetime.now().strftime('%H:%M')}] PROTOCOL: Armed Forces on standby.")
-if st.sidebar.button("☢️ EVACUATION ORDER"):
-    st.session_state.protocol = "EVACUATION"
-    st.session_state.logs.append(f"[{datetime.datetime.now().strftime('%H:%M')}] PROTOCOL: Evacuating Putrajaya HQ.")
+# 2. OPERATIONAL ACTIONS (Card-based Layout)
+st.markdown("#### Strategic Operations & Intelligence")
+col_actions, col_triggers = st.columns([1, 1])
 
-# --- INTEL DECRYPTION (FIXED LOGIC) ---
-st.subheader("🔓 Intelligence Decryption Portal")
-c1, c2, c3 = st.columns(3)
-with c1:
-    if st.button("DECRYPT: IRAN ASSETS"):
-        st.session_state.logs.append(f"[{datetime.datetime.now().strftime('%H:%M')}] INTEL: Thermal spikes at Isfahan missile site.")
-with c2:
-    if st.button("DECRYPT: US/EU NAVY"):
-        st.session_state.logs.append(f"[{datetime.datetime.now().strftime('%H:%M')}] INTEL: US Carrier Lincoln enters Strait of Hormuz.")
-with c3:
-    if st.button("DECRYPT: MY INTEL"):
-        st.session_state.logs.append(f"[{datetime.datetime.now().strftime('%H:%M')}] INTEL: MKN detecting cyber probes on Putrajaya grid.")
+with col_actions:
+    st.markdown('<div class="data-card">', unsafe_allow_html=True)
+    st.markdown("<p style='font-size:13px; font-weight:600; color:#4B5563;'>DECRYPTION CHANNELS</p>", unsafe_allow_html=True)
+    ac1, ac2, ac3 = st.columns(3)
+    if ac1.button("Decrypt Iran"): st.session_state.logs.append("SIGINT: Iran IRGC communication intercepted.")
+    if ac2.button("Decrypt US Navy"): st.session_state.logs.append("OSINT: US 5th Fleet movement confirmed.")
+    if ac3.button("Decrypt MY Intel"): st.session_state.logs.append("MKN: Domestic energy reserve report.")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# --- TACTICAL TRIGGERS ---
-st.divider()
-st.subheader("🕹️ Strategic Crisis Triggers")
-t1, t2, t3 = st.columns(3)
-if t1.button("⚡ EXECUTE CYBER OVERRIDE"):
-    st.session_state.oil_mult = 1.15
-    st.session_state.logs.append(f"[{datetime.datetime.now().strftime('%H:%M')}] ACTION: Cyber-attack successful. Iran C2 offline.")
-if t2.button("🚧 BLOCKADE HORMUZ"):
-    st.session_state.oil_mult = 1.50
-    st.session_state.logs.append(f"[{datetime.datetime.now().strftime('%H:%M')}] ACTION: Hormuz blocked. Global oil shock active.")
-if t3.button("🚀 PRE-EMPTIVE STRIKE"):
-    st.session_state.oil_mult = 1.30
-    st.session_state.logs.append(f"[{datetime.datetime.now().strftime('%H:%M')}] ACTION: Kinetic strike on enrichment facility.")
+with col_triggers:
+    st.markdown('<div class="data-card" style="border-left: 4px solid #DC2626;">', unsafe_allow_html=True)
+    st.markdown("<p style='font-size:13px; font-weight:600; color:#DC2626;'>CRISIS TRIGGERS</p>", unsafe_allow_html=True)
+    tr1, tr2, tr3 = st.columns(3)
+    if tr1.button("Cyber Override"): st.session_state.oil_mult = 1.12
+    if tr2.button("Hormuz Blockade"): st.session_state.oil_mult = 1.45
+    if tr3.button("Pre-emptive Strike"): st.session_state.oil_mult = 1.28
+    st.markdown('</div>', unsafe_allow_html=True)
 
-# --- DYNAMIC MAPPING ---
-st.divider()
-st.subheader("📍 National Strategic Resource & Risk Mapping")
-if st.session_state.protocol != "STANDBY":
-    st.error(f"⚠️ ACTIVE PROTOCOL: {st.session_state.protocol}")
+# 3. INTELLIGENCE TABLE & LOGS
+st.markdown("#### Regional Resource Risk Mapping")
+c_table, c_logs = st.columns([2, 1])
 
-state_data = {
-    "Region / State": [
-        "W.P. Kuala Lumpur", "W.P. Putrajaya", "W.P. Labuan", "Selangor", "Penang", 
-        "Johor", "Sarawak", "Sabah", "Terengganu", "Kedah", "Perak", "Pahang", 
-        "Melaka", "Negeri Sembilan", "Kelantan", "Perlis"
-    ],
-    "Key Resource": [
-        "Financial Hub / Capital", "Governance HQ", "Offshore Finance / O&G", 
-        "Industry & Logistics", "Global Semiconductors", "Ports / O&G Hub", 
-        "Energy / O&G Export", "Palm Oil / O&G", "Petroleum Export", 
-        "Rice (Food Security)", "Minerals / Industry", "Bauxite / Timber", 
-        "Refineries / Tourism", "Aerospace / Tech", "Agriculture", "Border Trade"
-    ]
-}
+with c_table:
+    state_data = {
+        "State / Territory": ["W.P. Kuala Lumpur", "W.P. Putrajaya", "Penang", "Sarawak", "Selangor", "Johor", "Kedah"],
+        "Strategic Domain": ["Financial Hub", "Governance", "Semiconductors", "Energy/O&G", "Logistics", "Manufacturing", "Food Security"],
+        "Impact Level": ["High" if st.session_state.oil_mult > 1.2 else "Stable"] * 7
+    }
+    df = pd.DataFrame(state_data)
+    st.table(df)
 
-df = pd.DataFrame(state_data)
+with c_logs:
+    st.markdown("<p style='font-size:13px; font-weight:600; color:#4B5563;'>COMMAND LOGS</p>", unsafe_allow_html=True)
+    log_content = "\n".join(reversed(st.session_state.logs[-8:]))
+    st.code(log_content if log_content else "Awaiting system input...", language="bash")
 
-def calculate_risk(row):
-    m = st.session_state.oil_mult
-    state = row["Region / State"]
-    if m > 1.4:
-        if state in ["W.P. Kuala Lumpur", "W.P. Putrajaya", "Penang", "Selangor", "Johor"]:
-            return "🔴 CRITICAL"
-        return "🟠 HIGH"
-    elif m > 1.1:
-        if state in ["Penang", "Sarawak", "Kedah", "W.P. Labuan"]:
-            return "🟠 HIGH"
-        return "🟡 MODERATE"
-    else:
-        return "🟢 STABLE"
+# AI ADVISORY CALLOUT
+if st.session_state.oil_mult > 1.1:
+    st.warning(f"**AI ADVISORY:** Geopolitical risk is affecting the USD/MYR exchange rate. Current fiscal debt trajectory: RM {current_debt/1e12:.2f}T. Lead Analyst {OWNER_NAME.split()[0]} is advised to review energy subsidies.")
 
-df["Status"] = df.apply(calculate_risk, axis=1)
-st.table(df) # Guna table untuk readability yang lebih baik
-
-# --- AI & LOGS ---
-st.divider()
-a1, a2 = st.columns([1, 2])
-with a1:
-    st.subheader("🤖 AI ADVISORY")
-    if st.session_state.oil_mult > 1.4:
-        st.error(f"DIRECTOR {OWNER_NAME.split()[0]}: Financial collapse risk in KL. National debt surging. Initiate energy rationing.")
-    elif st.session_state.oil_mult > 1.1:
-        st.warning("ADVISORY: Penang E&E supply chain under strain. Ringgit pressure increasing.")
-    else:
-        st.success("STATUS: Strategic Federation stable. No immediate territorial threats.")
-
-with a2:
-    st.subheader("📜 COMMAND LOG (LATEST)")
-    # Paparkan log dalam format yang lebih bersih
-    for log in reversed(st.session_state.logs[-8:]):
-        st.code(log, language="bash")
-
-st.caption(f"© 2026 GEOPOLITICAL COMMAND | ANALYST: {OWNER_NAME} | DATA: LIVE FINANCIAL API")
+st.markdown("<p style='text-align: center; color: #9CA3AF; font-size: 12px; margin-top: 40px;'>Strategic Command Terminal | Powered by Live Data API | Proprietary & Confidential</p>", unsafe_allow_html=True)
